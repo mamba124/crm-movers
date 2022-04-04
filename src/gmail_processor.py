@@ -150,14 +150,16 @@ class MessageGmail:
     
     def process_decoded_data(self, msg, scraped_links, scraped_profiles):
         soup = self.decode_message()
-        if soup:           
+        quote = None
+        if soup:
+            print(self.subject)
             if self.relevant_parts[0] in self.subject:
                 link = soup.findAll("a")[-4].get("href") #-4
                 quote = self.parse_nearby_job(soup, link)
             elif self.relevant_parts[1] in self.subject:
                 link = soup.findAll("a")[-4].get("href") #-4
                 quote = self.parse_direct_quote(soup, link)
-        scraped_profiles.append(quote)                
+        scraped_profiles.append(quote)            
         return scraped_profiles
 
     def decode_message(self):
@@ -217,7 +219,7 @@ class MessageGmail:
         return scraped_profiles
    
     def parse_nearby_job(self, soup, link):
-        DirectQuote = namedtuple('DirectQuote', ['name', 'district', 'moveto', 'link', 'movewhen', 'quotedate', 'size', 'movefrom'])
+        DirectQuote = namedtuple('DirectQuote', ['name', 'district', 'moveto', 'link', 'movewhen', 'quotedate', 'size', 'movefrom', 'direct'])
 
         stripped = soup.findAll("div")[7].stripped_strings
         stripped_list = [phrase for phrase in stripped]
@@ -234,6 +236,8 @@ class MessageGmail:
             request_district = "Trek Orange County"
         elif "6CV3T3cJwl9z3393c9VdVw" in link:
             request_district = "Trek Thousand Oaks"
+        else:
+            request_district = "Trek LA"
             
         quote = DirectQuote(name, request_district, None, link, movewhen, None, None, movefrom, 'Nearby')
         
