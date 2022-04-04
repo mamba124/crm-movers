@@ -129,7 +129,6 @@ def get_unread_mails():
         messages = unread_mail_list_request.get('messages')
         gmail_agent = MessageGmail(service=service)
         scraped_links, scraped_profiles = gmail_agent.parse_messages(messages, scraped_links, scraped_profiles)
-    print(scraped_links, "read")
     return scraped_links, scraped_profiles
 
 
@@ -154,21 +153,12 @@ class MessageGmail:
         if soup:           
             if self.relevant_parts[0] in self.subject:
                 link = soup.findAll("a")[-4].get("href") #-4
-                self.service.users().messages().modify(userId='me',
-                                                  id=msg['id'],
-                                                  body={'removeLabelIds': ['UNREAD']}).execute()
-                scraped_links.append(link)     
-                scraped_profiles.append(None)
+                quote = self.parse_nearby_job(soup, link)
             elif self.relevant_parts[1] in self.subject:
                 link = soup.findAll("a")[-4].get("href") #-4
-                self.service.users().messages().modify(userId='me',
-                                                  id=msg['id'],
-                                                  body={'removeLabelIds': ['UNREAD']}).execute()
-                direct_quote = self.parse_direct_quote(soup, link)
-                scraped_links.append(None)
-                scraped_profiles.append(direct_quote)
-        print(scraped_links, "process decoded")                
-        return scraped_links, scraped_profiles
+                quote = self.parse_direct_quote(soup, link)
+        scraped_profiles.append(quote)                
+        return scraped_profiles
 
     def decode_message(self):
         parts = self.payload.get('parts')
@@ -182,7 +172,7 @@ class MessageGmail:
                 return soup
             
     def parse_direct_quote(self, soup, link):
-        DirectQuote = namedtuple('DirectQuote', ['name', 'district', 'moveto', 'link', 'movewhen', 'quotedate', 'size', 'movefrom'])
+        DirectQuote = namedtuple('DirectQuote', ['name', 'district', 'moveto', 'link', 'movewhen', 'quotedate', 'size', 'movefrom', 'direct'])
      #   name = subject.split("Message from")[1].split("for")[0]
         name = self.subject.split(":")[1].split("is")[0]
         if " - " in self.subject:
@@ -200,9 +190,9 @@ class MessageGmail:
                 moveto = stripped_list[i+1]
             elif "When do you want to move" in string:
                 movewhen = stripped_list[i+1]
-        
+    
+        direct_quote = DirectQuote(name, request_district, moveto, link, movewhen, None, size, movefrom, 'Direct')
 
-        direct_quote = DirectQuote(name, request_district, moveto, link, movewhen, None, size, movefrom)
         return direct_quote
 
     def parse_messages(self, messages, scraped_links, scraped_profiles):
@@ -222,9 +212,29 @@ class MessageGmail:
                     for d in headers:
                         if d['name'] == 'Subject':
                             self.subject = d['value']
-                    
                     self.relevant_parts = ["job for", "is requesting a quote"]
-                    
-                    scraped_links, scraped_profiles = self.process_decoded_data(msg, scraped_links, scraped_profiles)
-                    print(scraped_links, "parse_msg")
-        return scraped_links, scraped_profiles
+                    scraped_profiles = self.process_decoded_data(msg, scraped_links, scraped_profiles)
+        return scraped_profiles
+   
+    def parse_nearby_job(self, soup, link):
+        DirectQuote = namedtuple('DirectQuote', ['name', 'district', 'moveto', 'link', 'movewhen', 'quotedate', 'size', 'movefrom'])
+
+        stripped = soup.findAll("div")[7].stripped_strings
+        stripped_list = [phrase for phrase in stripped]
+        stripped = ' '.join(stripped_list)
+        zip_avail = stripped.split("ZIP Code: ")[-1]
+        movefrom = zip_avail.split()[0]
+        movewhen = zip_avail.split()[-1]
+        name = self.subject.split(" has a")[0]
+        if "_wnBeUDshFbA3kh-MAqa6g" in link:
+            request_district = "Trek LA"
+        elif "ws6UJDDSo1cB8fc6f4A9BQ" in link:
+            request_district = "Trek San Jose"
+        elif "vKVDWIaMRSss3kZAkFbmBA" in link:
+            request_district = "Trek Orange County"
+        elif "6CV3T3cJwl9z3393c9VdVw" in link:
+            request_district = "Trek Thousand Oaks"
+            
+        quote = DirectQuote(name, request_district, None, link, movewhen, None, None, movefrom, 'Nearby')
+        
+        return quote
