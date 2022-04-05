@@ -21,12 +21,14 @@ if __name__ == '__main__':
                 scraped_profiles = get_unread_mails()
                 if scraped_profiles:
                     for profile in scraped_profiles:
-                        fresh_date = str(datetime.now().date())
-                        if current_date != fresh_date:
-                            current_date = fresh_date
-                            yelpers_records.date = current_date
-                        yelpers_records.assign_fields(profile)    
-                        make_a_yelper_record(yelpers_records)                    
+                        if profile:
+                            fresh_date = str(datetime.now().date())
+                            if current_date != fresh_date:
+                                current_date = fresh_date
+                                yelpers_records.date = current_date
+                            yelpers_records.assign_fields(profile)
+                            print("got to record")
+                            make_a_yelper_record(yelpers_records)                    
             except Exception as e:
                 print(e)                   
                 traceback.print_exc()

@@ -116,10 +116,10 @@ def get_unread_mails():
     validate_token_time(service)
     num_retries = 0
     response_valid = False
-    scraped_links, scraped_profiles = [], []
+    scraped_profiles = []
     while num_retries < 10: 
         try: 
-            unread_mail_list_request = service.users().messages().list(userId='me').execute()
+            unread_mail_list_request = service.users().messages().list(userId='me', q="is:unread").execute()#, q="is:unread"
             response_valid = True
             break
         except socket.timeout:
@@ -128,8 +128,8 @@ def get_unread_mails():
     if response_valid:
         messages = unread_mail_list_request.get('messages')
         gmail_agent = MessageGmail(service=service)
-        scraped_links, scraped_profiles = gmail_agent.parse_messages(messages, scraped_links, scraped_profiles)
-    return scraped_links, scraped_profiles
+        scraped_profiles = gmail_agent.parse_messages(messages, scraped_profiles)
+    return scraped_profiles
 
 
 def get_encoded_message(service, msg):
@@ -148,7 +148,7 @@ class MessageGmail:
         self.decoded_data = None
         self.service = kwargs.get("service")
     
-    def process_decoded_data(self, msg, scraped_links, scraped_profiles):
+    def process_decoded_data(self, msg, scraped_profiles):
         soup = self.decode_message()
         quote = None
         if soup:
@@ -159,7 +159,7 @@ class MessageGmail:
             elif self.relevant_parts[1] in self.subject:
                 link = soup.findAll("a")[-4].get("href") #-4
                 quote = self.parse_direct_quote(soup, link)
-        scraped_profiles.append(quote)            
+        scraped_profiles.append(quote)
         return scraped_profiles
 
     def decode_message(self):
@@ -192,12 +192,12 @@ class MessageGmail:
                 moveto = stripped_list[i+1]
             elif "When do you want to move" in string:
                 movewhen = stripped_list[i+1]
-    
+        
         direct_quote = DirectQuote(name, request_district, moveto, link, movewhen, None, size, movefrom, 'Direct')
 
         return direct_quote
 
-    def parse_messages(self, messages, scraped_links, scraped_profiles):
+    def parse_messages(self, messages, scraped_profiles):
         # messages is a list of dictionaries where each dictionary contains a message id.
         if messages:
             for msg in messages:
@@ -215,18 +215,16 @@ class MessageGmail:
                         if d['name'] == 'Subject':
                             self.subject = d['value']
                     self.relevant_parts = ["job for", "is requesting a quote"]
-                    scraped_profiles = self.process_decoded_data(msg, scraped_links, scraped_profiles)
+                    scraped_profiles = self.process_decoded_data(msg, scraped_profiles)
         return scraped_profiles
    
     def parse_nearby_job(self, soup, link):
         DirectQuote = namedtuple('DirectQuote', ['name', 'district', 'moveto', 'link', 'movewhen', 'quotedate', 'size', 'movefrom', 'direct'])
 
-        stripped = soup.findAll("div")[7].stripped_strings
-        stripped_list = [phrase for phrase in stripped]
-        stripped = ' '.join(stripped_list)
-        zip_avail = stripped.split("ZIP Code: ")[-1]
+        stripped = ''.join([t.text for t in soup.findAll("td")]).replace("\n", "").strip()
+        zip_avail = stripped.split("ZIP Code: ")[1]
         movefrom = zip_avail.split()[0]
-        movewhen = zip_avail.split()[-1]
+        movewhen = stripped.split("ZIP Code: ")[1].split('Availability: ')[1].split("  ")[0]
         name = self.subject.split(" has a")[0]
         if "_wnBeUDshFbA3kh-MAqa6g" in link:
             request_district = "Trek LA"
@@ -238,7 +236,5 @@ class MessageGmail:
             request_district = "Trek Thousand Oaks"
         else:
             request_district = "Trek LA"
-            
         quote = DirectQuote(name, request_district, None, link, movewhen, None, None, movefrom, 'Nearby')
-        
         return quote

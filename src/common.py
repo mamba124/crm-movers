@@ -16,7 +16,7 @@ def validate_launch_time():
 def make_a_yelper_record(new_row):
     ### this must be changed to online sync
     if "yelpers_stats.csv" not in os.listdir():
-        df = pd.DataFrame(columns=['Success',
+        df = pd.DataFrame(columns=[
                                    'When quote appeared',
                                    'Link', 
                                    'Name if exists',
@@ -32,7 +32,7 @@ def make_a_yelper_record(new_row):
     else:
         df = pd.read_csv("yelpers_stats.csv")
         
-    new_row_df = pd.Series({'Success': new_row.success,
+    new_row_df = pd.Series({
                             'When quote appeared': new_row.date,
                             'Link': new_row.link,
                             'Name if exists': new_row.name,
@@ -42,7 +42,8 @@ def make_a_yelper_record(new_row):
                             "Moving date": new_row.movewhen,
                             "Size": new_row.size,
                             "Direct / Nearby": new_row.direct})
-    if not len(df[df['Link'].str.contains(new_row.link)]):
+    #if not len(df[df['Link'].str.contains(new_row.link)]):
+    if new_row.link not in df['Link'].values:
         df = df.append(new_row_df, ignore_index=True)
         df.to_csv("yelpers_stats.csv", index=False)
         print("yelpers stats recorded!")
