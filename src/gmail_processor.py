@@ -120,7 +120,7 @@ def get_unread_mails():
     scraped_profiles = []
     while num_retries < 10: 
         try: 
-            unread_mail_list_request = service.users().messages().list(userId='me').execute()#, q="is:unread"
+            unread_mail_list_request = service.users().messages().list(userId='me', maxResults=500).execute()#, q="is:unread"
             response_valid = True
             break
         except socket.timeout:
