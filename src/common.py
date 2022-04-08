@@ -1,5 +1,19 @@
 import os
 import pandas as pd
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
+         "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
+
+def upload_crm(content):
+    credentials = ServiceAccountCredentials.from_json_keyfile_name('secret_files/credentials_driver.json', scope)
+    client = gspread.authorize(credentials)
+    
+    spreadsheet = client.open('Bot CRM dump')
+    client.import_csv(spreadsheet.id, data=content)
+    print("document updated!")
+
 
 def validate_launch_time():
     start = os.environ.get("START")
@@ -45,7 +59,12 @@ def make_a_yelper_record(new_row):
     if new_row.link not in df['Link'].values:
         df = df.append(new_row_df, ignore_index=True)
         df.to_csv("yelpers_stats.csv", index=False)
-        print("yelpers stats recorded!")
+        print("yelpers stats recorded!")        
+        with open('yelpers_stats.csv', 'r') as file_obj:
+            content = file_obj.read()
+            upload_crm(content)        
+        
+
     
     
 class RecordClass:
