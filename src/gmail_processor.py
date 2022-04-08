@@ -15,6 +15,7 @@ import socket
 from email.mime.text import MIMEText
 import base64
 from collections import namedtuple
+from src.common import RecordClass, make_a_yelper_record
 
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 
@@ -128,8 +129,8 @@ def get_unread_mails():
     if response_valid:
         messages = unread_mail_list_request.get('messages')
         gmail_agent = MessageGmail(service=service)
-        scraped_profiles = gmail_agent.parse_messages(messages, scraped_profiles)
-    return scraped_profiles
+        gmail_agent.parse_messages(messages, scraped_profiles)
+   # return scraped_profiles
 
 
 def get_encoded_message(service, msg):
@@ -149,6 +150,10 @@ class MessageGmail:
         self.service = kwargs.get("service")
     
     def process_decoded_data(self, msg, scraped_profiles):
+        current_date = str(datetime.now().date())
+        
+        yelpers_records = RecordClass()
+        yelpers_records.date = current_date        
         soup = self.decode_message()
         quote = None
         if soup:
@@ -156,11 +161,15 @@ class MessageGmail:
             if self.relevant_parts[0] in self.subject:
                 link = soup.findAll("a")[-4].get("href") #-4
                 quote = self.parse_nearby_job(soup, link)
-            elif self.relevant_parts[1] in self.subject:
-                link = soup.findAll("a")[-4].get("href") #-4
-                quote = self.parse_direct_quote(soup, link)
-        scraped_profiles.append(quote)
-        return scraped_profiles
+            elif "Fwd" not in self.subject:
+                if self.relevant_parts[1] in self.subject:
+                    link = soup.findAll("a")[-4].get("href") #-4
+                    quote = self.parse_direct_quote(soup, link)
+        if quote:                  
+            yelpers_records.assign_fields(quote)
+            make_a_yelper_record(yelpers_records)
+        #scraped_profiles.append(quote)
+        #return scraped_profiles
 
     def decode_message(self):
         parts = self.payload.get('parts')
@@ -215,8 +224,8 @@ class MessageGmail:
                         if d['name'] == 'Subject':
                             self.subject = d['value']
                     self.relevant_parts = ["job for", "is requesting a quote"]
-                    scraped_profiles = self.process_decoded_data(msg, scraped_profiles)
-        return scraped_profiles
+                    self.process_decoded_data(msg, scraped_profiles)
+  #      return scraped_profiles
    
     def parse_nearby_job(self, soup, link):
         DirectQuote = namedtuple('DirectQuote', ['name', 'district', 'moveto', 'link', 'movewhen', 'quotedate', 'size', 'movefrom', 'direct'])
@@ -224,7 +233,10 @@ class MessageGmail:
         stripped = ''.join([t.text for t in soup.findAll("td")]).replace("\n", "").strip()
         zip_avail = stripped.split("ZIP Code: ")[1]
         movefrom = zip_avail.split()[0]
-        movewhen = stripped.split("ZIP Code: ")[1].split('Availability: ')[1].split("  ")[0]
+        if not stripped.split("ZIP Code: ")[1].split('Availability: '):
+            movewhen = None
+        else:
+            movewhen = stripped.split("ZIP Code: ")[1].split('Availability: ')[1].split("  ")[0]
         name = self.subject.split(" has a")[0]
         if "_wnBeUDshFbA3kh-MAqa6g" in link:
             request_district = "Trek LA"

@@ -16,32 +16,31 @@ def validate_launch_time():
 def make_a_yelper_record(new_row):
     ### this must be changed to online sync
     if "yelpers_stats.csv" not in os.listdir():
-        df = pd.DataFrame(columns=[
-                                   'When quote appeared',
+        df = pd.DataFrame(columns=['When quote appeared',
+                                   "Direct / Nearby",
                                    'Link', 
                                    'Name if exists',
                                    "Current location ZIP",
                                    "Destination ZIP",
                                    "TrekMovers YELP Location",
-                                   "Moving date",
                                    "Size",
-                                   "Direct / Nearby"])
+                                   "Moving date"
+                                   ])
 
         df.to_csv("yelpers_stats.csv", index=False)
         print("created new table")
     else:
         df = pd.read_csv("yelpers_stats.csv")
-        
-    new_row_df = pd.Series({
-                            'When quote appeared': new_row.date,
+    new_row_df = pd.Series({'When quote appeared': new_row.date,
+                            "Direct / Nearby": new_row.direct,
                             'Link': new_row.link,
                             'Name if exists': new_row.name,
                             "Current location ZIP": new_row.movefrom,
                             "Destination ZIP": new_row.moveto,
                             "TrekMovers YELP Location": new_row.district,
-                            "Moving date": new_row.movewhen,
-                            "Size": new_row.size,
-                            "Direct / Nearby": new_row.direct})
+                            "Size": None,
+                            "Moving date": new_row.movewhen#})
+                            })
     #if not len(df[df['Link'].str.contains(new_row.link)]):
     if new_row.link not in df['Link'].values:
         df = df.append(new_row_df, ignore_index=True)
