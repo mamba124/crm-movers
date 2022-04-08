@@ -120,7 +120,7 @@ def get_unread_mails():
     scraped_profiles = []
     while num_retries < 10: 
         try: 
-            unread_mail_list_request = service.users().messages().list(userId='me', q="is:unread").execute()#, q="is:unread"
+            unread_mail_list_request = service.users().messages().list(userId='me').execute()#, q="is:unread"
             response_valid = True
             break
         except socket.timeout:
@@ -233,10 +233,10 @@ class MessageGmail:
         stripped = ''.join([t.text for t in soup.findAll("td")]).replace("\n", "").strip()
         zip_avail = stripped.split("ZIP Code: ")[1]
         movefrom = zip_avail.split()[0]
-        if not stripped.split("ZIP Code: ")[1].split('Availability: '):
-            movewhen = None
-        else:
+        try:
             movewhen = stripped.split("ZIP Code: ")[1].split('Availability: ')[1].split("  ")[0]
+        except IndexError:
+            movewhen = None
         name = self.subject.split(" has a")[0]
         if "_wnBeUDshFbA3kh-MAqa6g" in link:
             request_district = "Trek LA"
