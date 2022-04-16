@@ -7,7 +7,7 @@ scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/au
          "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
 
 def upload_crm(content):
-    credentials = ServiceAccountCredentials.from_json_keyfile_name('secret_files/credentials_driver.json', scope)
+    credentials = ServiceAccountCredentials.from_json_keyfile_name('secret_files/credentials_driver_trek.json', scope)
     client = gspread.authorize(credentials)
     
     spreadsheet = client.open('Bot CRM dump')
@@ -52,7 +52,7 @@ def make_a_yelper_record(new_row):
                             "Current location ZIP": new_row.movefrom,
                             "Destination ZIP": new_row.moveto,
                             "TrekMovers YELP Location": new_row.district,
-                            "Size": None,
+                            "Size": new_row.size,
                             "Moving date": new_row.movewhen#})
                             })
     #if not len(df[df['Link'].str.contains(new_row.link)]):

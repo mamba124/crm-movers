@@ -71,7 +71,7 @@ def token_check(path='secret_files/token.pickle'):
     return creds
 
 
-def refresh_token(creds, credentials_path="secret_files/credentials.json", token_path="secret_files/token.pickle"):
+def refresh_token(creds, credentials_path="secret_files/credentials_trek.json", token_path="secret_files/token.pickle"):
     refresh_counter = 0
     if creds and creds.expired and creds.refresh_token:
         try:
@@ -163,7 +163,12 @@ class MessageGmail:
                 quote = self.parse_nearby_job(soup, link)
             elif "Fwd" not in self.subject:
                 if self.relevant_parts[1] in self.subject:
-                    link = soup.findAll("a")[-4].get("href") #-4
+                    link1 = soup.findAll("a")[-5].get("href")
+                    link2 = soup.findAll("a")[-4].get("href") #-4
+                    if 'biz.yelp' in link1:
+                        link = link1
+                    elif 'biz.yelp' in link2:
+                        link = link2
                     quote = self.parse_direct_quote(soup, link)
         if quote:                  
             yelpers_records.assign_fields(quote)
@@ -173,37 +178,40 @@ class MessageGmail:
 
     def decode_message(self):
         parts = self.payload.get('parts')
-        for part in parts:
-            mtype = part.get("mimeType")
-            if mtype == "text/html":
-                data = part['body']['data']
-                self.decoded_data = urlsafe_b64decode(data)
-       #         open("decoded.txt", 'wb').write(self.decoded_data)
-                soup = BeautifulSoup(self.decoded_data , "lxml")
-                return soup
+        if parts:
+            for part in parts:
+                mtype = part.get("mimeType")
+                if mtype == "text/html":
+                    data = part['body']['data']
+                    self.decoded_data = urlsafe_b64decode(data)
+           #         open("decoded.txt", 'wb').write(self.decoded_data)
+                    soup = BeautifulSoup(self.decoded_data , "lxml")
+                    return soup
             
     def parse_direct_quote(self, soup, link):
         DirectQuote = namedtuple('DirectQuote', ['name', 'district', 'moveto', 'link', 'movewhen', 'quotedate', 'size', 'movefrom', 'direct'])
      #   name = subject.split("Message from")[1].split("for")[0]
         name = self.subject.split(":")[1].split("is")[0]
+        try:
+            name.encode("latin-1")
+        except:
+            name = "Unknown characters"
         if " - " in self.subject:
-            request_district = self.subject.split(" - ")[0]
+            request_district = self.subject.split(" - ")[-1]
         else:
             request_district = "Trek LA"
         stripped = soup.findAll("div")[7].stripped_strings
         stripped_list = [phrase for phrase in stripped]
         for i, string in enumerate(stripped_list):
-            if "What is the size of your move" in string:
+            if "size of your move" in string:
                 size = stripped_list[i + 1]
-            elif "zip code of your current location" in string:
+            elif "zip code of your current location" in string or "location do you need the service?" in string or "Where are you moving from?" in string:
                 movefrom = stripped_list[i+1]
-            elif "zip code at your destination" in string:
+            elif "zip code at your destination" in string or "Where are you moving to?" in string or "location you are moving to" in string:
                 moveto = stripped_list[i+1]
-            elif "When do you want to move" in string:
+            elif "When do you want to move" in string or "When do you require this service?" in string:
                 movewhen = stripped_list[i+1]
-        
         direct_quote = DirectQuote(name, request_district, moveto, link, movewhen, None, size, movefrom, 'Direct')
-
         return direct_quote
 
     def parse_messages(self, messages, scraped_profiles):
@@ -238,6 +246,10 @@ class MessageGmail:
         except IndexError:
             movewhen = None
         name = self.subject.split(" has a")[0]
+        try:
+            name.encode("latin-1")
+        except:
+            name = "Unknown characters"        
         if "_wnBeUDshFbA3kh-MAqa6g" in link:
             request_district = "Trek LA"
         elif "ws6UJDDSo1cB8fc6f4A9BQ" in link:
