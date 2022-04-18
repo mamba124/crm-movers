@@ -202,6 +202,10 @@ class MessageGmail:
             request_district = "Trek LA"
         stripped = soup.findAll("div")[7].stripped_strings
         stripped_list = [phrase for phrase in stripped]
+        moveto = None
+        size = None
+        movefrom = None
+        movewhen = None
         for i, string in enumerate(stripped_list):
             if "size of your move" in string:
                 size = stripped_list[i + 1]
