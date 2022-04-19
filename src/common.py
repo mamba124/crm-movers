@@ -60,19 +60,19 @@ def make_a_yelper_record(new_row):
                             "Size": new_row.size,
                             "Moving date": new_row.movewhen
                             })
-    #if not len(df[df['Link'].str.contains(new_row.link)]):
     
     if new_row.link not in df['Link'].values:
         df = df.append(new_row_df, ignore_index=True)
         #df = df.sort_values(by="When quote appeared", ascending=False)
-        df = df.iloc[::-1]
-        df.to_csv("yelpers_stats.csv", index=False)
- #       new_row_df = new_row_df.append(df, ignore_index=True) 
-#        new_row_df.to_csv("yelpers_stats.csv", index=False)
+        df = df.iloc[::-1].reset_index(drop=True)
+        df.to_csv("yelpers_stats.csv", index=False)   
+
         print("yelpers stats recorded!")        
         with open('yelpers_stats.csv', 'r') as file_obj:
             content = file_obj.read()
             upload_crm(content)        
+        df = df.iloc[::-1].reset_index(drop=True)
+        df.to_csv("yelpers_stats.csv", index=False)              
         
 
     
