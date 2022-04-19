@@ -19,9 +19,9 @@ def validate_launch_time():
     start = os.environ.get("START")
     finish = os.environ.get("FINISH")
     if not start:
-        start = 14
+        start = 00
     if not finish:
-        finish = 11
+        finish = 00
     start_time = int(start)
     finish_time = int(finish)
     return start_time, finish_time
@@ -58,7 +58,10 @@ def make_a_yelper_record(new_row):
     #if not len(df[df['Link'].str.contains(new_row.link)]):
     if new_row.link not in df['Link'].values:
         df = df.append(new_row_df, ignore_index=True)
+        df = df.sort_values(by="When quote appeared", ascending=False)
         df.to_csv("yelpers_stats.csv", index=False)
+ #       new_row_df = new_row_df.append(df, ignore_index=True) 
+#        new_row_df.to_csv("yelpers_stats.csv", index=False)
         print("yelpers stats recorded!")        
         with open('yelpers_stats.csv', 'r') as file_obj:
             content = file_obj.read()
