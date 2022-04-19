@@ -103,7 +103,6 @@ def refresh_token(creds, credentials_path="secret_files/credentials_trek.json", 
             pickle.dump(creds, token)
     return creds
 
-
 def build_service():
     creds = token_check()
     if not creds or not creds.valid:  
@@ -150,7 +149,7 @@ class MessageGmail:
         self.service = kwargs.get("service")
     
     def process_decoded_data(self, msg, scraped_profiles):
-        current_date = str(datetime.now().date())
+        current_date = str(datetime.now())
         
         yelpers_records = RecordClass()
         yelpers_records.date = current_date        
