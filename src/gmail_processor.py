@@ -149,9 +149,16 @@ class MessageGmail:
         self.service = kwargs.get("service")
     
     def process_decoded_data(self, msg, scraped_profiles):
-        current_date = str(datetime.now().date())
-        current_time = str(datetime.now().time())
-        
+      #  current_date = str(datetime.now().date())
+        for d in self.payload['headers']:
+            if d["name"] == "Date":
+                for s in ["-", "+"]:
+                    if s in d['value']:
+                        sign = s
+                raw_time = d['value'].split(sign)[0]
+        timestamp = datetime.strptime(raw_time, '%a, %d %b %Y %H:%M:%S ')
+        current_time = str(timestamp.time())
+        current_date = str(timestamp.date())
         yelpers_records = RecordClass()
         yelpers_records.date = current_date   
         yelpers_records.time = current_time
