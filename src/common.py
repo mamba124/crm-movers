@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import numpy as np
 
 scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
          "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
@@ -31,6 +32,7 @@ def make_a_yelper_record(new_row):
     ### this must be changed to online sync
     if "yelpers_stats.csv" not in os.listdir():
         df = pd.DataFrame(columns=['When quote appeared',
+                                   'Time quote appeared',
                                    "Direct / Nearby",
                                    'Link', 
                                    'Name if exists',
@@ -45,7 +47,10 @@ def make_a_yelper_record(new_row):
         print("created new table")
     else:
         df = pd.read_csv("yelpers_stats.csv")
+    if "Time quote appeared" not in df.columns:
+        df.insert(1, "Time quote appeared", None)
     new_row_df = pd.Series({'When quote appeared': new_row.date,
+                            "Time quote appeared": new_row.time,
                             "Direct / Nearby": new_row.direct,
                             'Link': new_row.link,
                             'Name if exists': new_row.name,
@@ -53,12 +58,14 @@ def make_a_yelper_record(new_row):
                             "Destination ZIP": new_row.moveto,
                             "TrekMovers YELP Location": new_row.district,
                             "Size": new_row.size,
-                            "Moving date": new_row.movewhen#})
+                            "Moving date": new_row.movewhen
                             })
     #if not len(df[df['Link'].str.contains(new_row.link)]):
+    
     if new_row.link not in df['Link'].values:
         df = df.append(new_row_df, ignore_index=True)
-        df = df.sort_values(by="When quote appeared", ascending=False)
+        #df = df.sort_values(by="When quote appeared", ascending=False)
+        df = df.iloc[::-1]
         df.to_csv("yelpers_stats.csv", index=False)
  #       new_row_df = new_row_df.append(df, ignore_index=True) 
 #        new_row_df.to_csv("yelpers_stats.csv", index=False)
@@ -73,6 +80,7 @@ def make_a_yelper_record(new_row):
 class RecordClass:
     def __init__(self):
         self.date = None
+        self.time = None
         self.link = None
         self.name = None
         self.movefrom = None

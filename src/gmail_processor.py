@@ -149,10 +149,12 @@ class MessageGmail:
         self.service = kwargs.get("service")
     
     def process_decoded_data(self, msg, scraped_profiles):
-        current_date = str(datetime.now())
+        current_date = str(datetime.now().date())
+        current_time = str(datetime.now().time())
         
         yelpers_records = RecordClass()
-        yelpers_records.date = current_date        
+        yelpers_records.date = current_date   
+        yelpers_records.time = current_time
         soup = self.decode_message()
         quote = None
         if soup:
