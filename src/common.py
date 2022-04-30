@@ -28,6 +28,23 @@ def validate_launch_time():
     return start_time, finish_time
 
 
+def check_encoding(value):
+    try:
+        value.encode("latin-1")
+    except UnicodeEncodeError:
+        value = "Unknown characters"
+    except AttributeError:
+        value = value
+    return value
+
+
+def fix_df(df):
+    for row_i in range(len(df)-1):
+        for col in df.columns:
+            df.loc[row_i, col] = check_encoding(df.loc[row_i, col])
+    return df
+
+
 def make_a_yelper_record(new_row):
     ### this must be changed to online sync
     if "yelpers_stats.csv" not in os.listdir():
@@ -47,18 +64,19 @@ def make_a_yelper_record(new_row):
         print("created new table")
     else:
         df = pd.read_csv("yelpers_stats.csv")
+
     if "Time quote appeared" not in df.columns:
         df.insert(1, "Time quote appeared", None)
-    new_row_df = pd.Series({'When quote appeared': new_row.date,
-                            "Time quote appeared": new_row.time,
-                            "Direct / Nearby": new_row.direct,
-                            'Link': new_row.link,
-                            'Name if exists': new_row.name,
-                            "Current location ZIP": new_row.movefrom,
-                            "Destination ZIP": new_row.moveto,
-                            "TrekMovers YELP Location": new_row.district,
-                            "Size": new_row.size,
-                            "Moving date": new_row.movewhen
+    new_row_df = pd.Series({'When quote appeared': check_encoding(new_row.date),
+                            "Time quote appeared": check_encoding(new_row.time),
+                            "Direct / Nearby": check_encoding(new_row.direct),
+                            'Link': check_encoding(new_row.link),
+                            'Name if exists': check_encoding(new_row.name),
+                            "Current location ZIP": check_encoding(new_row.movefrom),
+                            "Destination ZIP": check_encoding(new_row.moveto),
+                            "TrekMovers YELP Location": check_encoding(new_row.district),
+                            "Size": check_encoding(new_row.size),
+                            "Moving date": check_encoding(new_row.movewhen)
                             })
     
     if new_row.link not in df['Link'].values:
